@@ -48,7 +48,7 @@ void setup() {
   
   // Inizializzo porta seriale
   Serial.begin(9600);  
-  Serial.println("Centralina avviata");
+  Serial.println(F("Centralina avviata"));
 }
 
 void loop() {
@@ -114,8 +114,6 @@ void initRele() {
 
 
 void toGreen() {
- beep(1);
- 
  //accende il verde
  GREEN_STATE  = 1;
  YELLOW_STATE = 0;
@@ -123,15 +121,15 @@ void toGreen() {
  
  //esegue toYellow() dopo il tempo assegnato al verde
  yellowID = t.after(greenTime, toYellow);
- Serial.print(yellowID, DEC);
  
  if(greenTime == 90000LL)
-  Serial.println("greentime IN");
+  Serial.println(F("greentime IN"));
  else if(greenTime == 150000LL)
-  Serial.println("greentime OUT");
+  Serial.println(F("greentime OUT"));
  else
-  Serial.println("greentime unknow");
+  Serial.println(F("greentime unknow"));
 
+ beep(1);
 }
 
 void toYellow() {
@@ -141,11 +139,11 @@ void toYellow() {
  RED_STATE    = 0; 
 
  //esegue toRed() dopo il tempo assegnato al giallo
- redID = t.after(yellowTime, toRed);
- Serial.print(redID, DEC);
- 
- Serial.println("yellow time");
-
+ redID = t.after(yellowTime, toRed); 
+ if(redID == -1)
+  Serial.println(F("yellow time error"));
+ else
+  Serial.println(F("yellow time"));
 }
 
 void toRed() {
@@ -155,11 +153,13 @@ void toRed() {
  RED_STATE    = 1; 
 
  if(state == ABCICLE_STATE) {
-   beep(2);
    //esegue toGreen() dopo il tempo pre inizio tiri
    greenID = t.after(preTime, toGreen);
-   Serial.print(greenID, DEC);
-   Serial.println("pre time");
+   if(greenID == -1)
+    Serial.println(F("pre time error"));
+   else
+    Serial.println(F("pre time"));
+   beep(2);
 
    //passa allo stato CD
    state = CDCICLE_STATE;
@@ -179,21 +179,25 @@ void toRed() {
 
 //esegue un beep "count" volte
 void beep(int count) {
+  
   if(count > 0)
     startBeep();
   
-  if(count >1)
-    Serial.println(t.every(BEEP_INTERVAL, startBeep, count-1), DEC);
+  if(count >1) 
+    t.every(BEEP_INTERVAL, startBeep, count-1);
 }
 
 void startBeep() {
-  Serial.println("start beep");
+  
   BEEP_STATE = 1;
-  Serial.println(t.after(BEEP_TIME, stopBeep), DEC);
+  if(t.after(BEEP_TIME, stopBeep) == -1)
+   Serial.println(F("start error"));
+  else
+  Serial.println(F("start beep"));
 }
 
 void stopBeep() {
-  Serial.println("stop beep");
+  Serial.println(F("stop beep"));
   BEEP_STATE = 0;
 }
 
@@ -226,12 +230,11 @@ void stepCtrl() {
   }
   
   if(RED_STATE==0 && !startPush && deb>100) {       // && digitalRead(RED_R) == HIGH) {
-   
+   Serial.println(F("step"));   
    //e' stato premuto il bottone di step a ciclo avviato
    //interrompo i timers, e passo al rosso
    stopTimers();
    toRed();
-   Serial.println("step");
    deb = 0;
    startPush = true;
   }
@@ -262,10 +265,10 @@ void startButtonCtrl() {
 }
 
 void startPushed() {
-  Serial.println("start premuto");
+  Serial.println(F("start premuto"));
   
   if(state == IDLE_STATE) {
-     Serial.println("START");
+     Serial.println(F("START"));
      
      if(!digitalRead(REC_B)) {
        //richiesta recupero accettata
@@ -277,18 +280,20 @@ void startPushed() {
        state = ABCICLE_STATE;
      }
 
-     beep(2);
      //dopo il preTime esegue toGreen()
      greenID = t.after(preTime, toGreen);
-     Serial.println("pre time");
-  } 
-  /*
-  else if(state == ABCICLE_STATE || state == CDCICLE_STATE) {
+     if(greenID == -1)
+      Serial.println(F("pre time error"));
+     else
+      Serial.println(F("pre time"));
+     beep(2);
+     
+  } else if(state == ABCICLE_STATE || state == CDCICLE_STATE) {
      //premere il bottone start durante fa resetta sutto allo stato di attesa
-     Serial.println("RESET"); 
+     Serial.println(F("RESET")); 
      stopTimers();
      state = IDLE_STATE;
-  }*/
+  }
 }
   
   
