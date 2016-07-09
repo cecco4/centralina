@@ -6,7 +6,7 @@ Timer t;
 const int RED_R = 5;      //relay rosso
 const int YELLOW_R = 6;   //relay giallo
 const int GREEN_R = 7;    //relay verde
-const int BEEP_R =8;      //relay sirena
+const int BEEP_R = 9;      //relay sirena
 
 const int OUTIN_B = 14;   //switch outdoor-indoor
 const int STEP_B = 3;     //pulsante step
@@ -17,7 +17,7 @@ const long long INDOOR_TIME = 90000LL;    // 1 min e 30 sec
 const long long OUTDOOR_TIME = 150000LL;  // 2 min e 30 sec
 
 const long long yellowTime = 1000*30;     // tempo giallo: 30 sec
-long long greenTime = 0;                  // tempo verde: da assegnare 
+long long greenTime = OUTDOOR_TIME;                  // tempo verde: da assegnare 
 
 const long preTime = 1000*10; //tempo prima dello start: 10 sec
 
@@ -30,6 +30,7 @@ const int IDLE_STATE = 0;
 const int ABCICLE_STATE = 1;
 const int CDCICLE_STATE =2;
 int state;  //stato della macchina
+boolean RED_STATE=0, YELLOW_STATE=0, GREEN_STATE=0, BEEP_STATE=0;
 
 boolean recupero = false; //stato recupero
 
@@ -53,6 +54,12 @@ void setup() {
 void loop() {
   //aggiorno timer
   t.update();
+
+  digitalWrite(GREEN_R, !GREEN_STATE); 
+  digitalWrite(YELLOW_R, !YELLOW_STATE); 
+  digitalWrite(RED_R, !RED_STATE);
+  digitalWrite(BEEP_R, !BEEP_STATE);
+
   
   //NB: il digital read dei bottoni restituisce: 
   //    0 se sono pigiati
@@ -110,34 +117,50 @@ void toGreen() {
  beep(1);
  
  //accende il verde
- digitalWrite(GREEN_R, LOW); 
- digitalWrite(YELLOW_R, HIGH); 
- digitalWrite(RED_R, HIGH); 
+ GREEN_STATE  = 1;
+ YELLOW_STATE = 0;
+ RED_STATE    = 0;
  
  //esegue toYellow() dopo il tempo assegnato al verde
  yellowID = t.after(greenTime, toYellow);
+ Serial.print(yellowID, DEC);
+ 
+ if(greenTime == 90000LL)
+  Serial.println("greentime IN");
+ else if(greenTime == 150000LL)
+  Serial.println("greentime OUT");
+ else
+  Serial.println("greentime unknow");
+
 }
 
 void toYellow() {
  //accende il giallo
- digitalWrite(GREEN_R, HIGH); 
- digitalWrite(YELLOW_R, LOW); 
- digitalWrite(RED_R, HIGH); 
+ GREEN_STATE  = 0;
+ YELLOW_STATE = 1;
+ RED_STATE    = 0; 
 
  //esegue toRed() dopo il tempo assegnato al giallo
  redID = t.after(yellowTime, toRed);
+ Serial.print(redID, DEC);
+ 
+ Serial.println("yellow time");
+
 }
 
 void toRed() {
  //accende il rosso
- digitalWrite(GREEN_R, HIGH); 
- digitalWrite(YELLOW_R, HIGH); 
- digitalWrite(RED_R, LOW); 
+ GREEN_STATE  = 0;
+ YELLOW_STATE = 0;
+ RED_STATE    = 1; 
 
  if(state == ABCICLE_STATE) {
    beep(2);
    //esegue toGreen() dopo il tempo pre inizio tiri
    greenID = t.after(preTime, toGreen);
+   Serial.print(greenID, DEC);
+   Serial.println("pre time");
+
    //passa allo stato CD
    state = CDCICLE_STATE;
    
@@ -160,16 +183,18 @@ void beep(int count) {
     startBeep();
   
   if(count >1)
-    t.every(BEEP_INTERVAL, startBeep, count-1);
+    Serial.println(t.every(BEEP_INTERVAL, startBeep, count-1), DEC);
 }
 
 void startBeep() {
-  digitalWrite(BEEP_R, LOW);
-  t.after(BEEP_TIME, stopBeep);
+  Serial.println("start beep");
+  BEEP_STATE = 1;
+  Serial.println(t.after(BEEP_TIME, stopBeep), DEC);
 }
 
 void stopBeep() {
-  digitalWrite(BEEP_R, HIGH);
+  Serial.println("stop beep");
+  BEEP_STATE = 0;
 }
 
 void stopTimers() {
@@ -187,30 +212,53 @@ void stopTimers() {
 
 
 void stepCtrl() {
-  if(!digitalRead(STEP_B) && digitalRead(RED_R) == HIGH) {
+  //il debounce evita paciughi nella lettura della pressione del bottone
+  static int deb =0;
+  static boolean startPush = false; 
+  
+  if(digitalRead(STEP_B)) {
+    deb = 0;
+    startPush = false;
+  }
+  
+  if(!digitalRead(STEP_B)) {
+    deb++;
+  }
+  
+  if(RED_STATE==0 && !startPush && deb>100) {       // && digitalRead(RED_R) == HIGH) {
+   
    //e' stato premuto il bottone di step a ciclo avviato
    //interrompo i timers, e passo al rosso
    stopTimers();
    toRed();
- }
+   Serial.println("step");
+   deb = 0;
+   startPush = true;
+  }
 }
 
 
 void startButtonCtrl() {
   //il debounce evita paciughi nella lettura della pressione del bottone
-  static int debounceStart =0;
+  static int deb =0;
   static boolean startPush = false; 
   
-  if(digitalRead(START_B))
-    debounceStart++;
-  if(!startPush && !digitalRead(START_B)) {
-    //il bottone e' stato premuto
-    startPushed(); 
-    startPush= true;
-    debounceStart=0;
+  if(digitalRead(START_B)) {
+    deb = 0;
+    startPush = false;
   }
-  if(startPush && debounceStart>500 && digitalRead(START_B))
-    startPush=false;
+  
+  if(!digitalRead(START_B)) {
+    deb++;
+  }
+
+  if(!startPush && deb > 100) {
+    //il bottone e' stato premuto
+    startPushed();
+    deb = 0;
+    startPush = true;
+  } 
+
 }
 
 void startPushed() {
@@ -232,13 +280,15 @@ void startPushed() {
      beep(2);
      //dopo il preTime esegue toGreen()
      greenID = t.after(preTime, toGreen);
-     
-  } else if(state == ABCICLE_STATE || state == CDCICLE_STATE) {
+     Serial.println("pre time");
+  } 
+  /*
+  else if(state == ABCICLE_STATE || state == CDCICLE_STATE) {
      //premere il bottone start durante fa resetta sutto allo stato di attesa
      Serial.println("RESET"); 
      stopTimers();
      state = IDLE_STATE;
-  }
+  }*/
 }
   
   
