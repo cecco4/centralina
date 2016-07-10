@@ -3,28 +3,28 @@
 Timer t;
 
 //Pin arduino:
-const int RED_R = 5;      //relay rosso
-const int YELLOW_R = 6;   //relay giallo
-const int GREEN_R = 7;    //relay verde
-const int BEEP_R = 9;      //relay sirena
+const int RED_R = 12;      //relay rosso
+const int YELLOW_R = 11;   //relay giallo
+const int GREEN_R = 10;    //relay verde
+const int BEEP_R = 8;      //relay sirena
 
-const int OUTIN_B = 14;   //switch outdoor-indoor
+const int OUTIN_B = 13;   //switch outdoor-indoor
 const int STEP_B = 3;     //pulsante step
 const int START_B = 2;    //pulsante start
 const int REC_B = 4;      //switch recupero
 
-const long long INDOOR_TIME = 90000LL;    // 1 min e 30 sec
-const long long OUTDOOR_TIME = 150000LL;  // 2 min e 30 sec
+const unsigned long long int INDOOR_TIME = 3000LL;    // 1 min e 30 sec
+const unsigned long long int OUTDOOR_TIME = 150000LL;  // 2 min e 30 sec
 
-const long long yellowTime = 1000*30;     // tempo giallo: 30 sec
-long long greenTime = OUTDOOR_TIME;                  // tempo verde: da assegnare 
+const unsigned long long int yellowTime = 2000LL;     // tempo giallo: 30 sec
+unsigned long long int greenTime = OUTDOOR_TIME;                  // tempo verde: da assegnare 
 
-const long preTime = 1000*10; //tempo prima dello start: 10 sec
+const unsigned long long int preTime = 3000LL; //tempo prima dello start: 10 sec
 
 int greenID=-1, yellowID=-1, redID=-1; // ID per il timer
 
-const long BEEP_TIME = 500;      //tempo sirena: 0.5 sec
-const long BEEP_INTERVAL = 1000; //intervallo sirena: 1 sec
+const unsigned long long int BEEP_TIME = 500LL;      //tempo sirena: 0.5 sec
+const unsigned long long int BEEP_INTERVAL = 1000LL; //intervallo sirena: 1 sec
 
 const int IDLE_STATE = 0;    
 const int ABCICLE_STATE = 1;
