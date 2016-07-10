@@ -13,14 +13,15 @@ const int STEP_B = 3;     //pulsante step
 const int START_B = 2;    //pulsante start
 const int REC_B = 4;      //switch recupero
 
-const int INDOOR_TIME = 90*4;    // 1 min e 30 sec
-const int OUTDOOR_TIME = 150*4;  // 2 min e 30 sec
+const int INDOOR_TIME = 90;    // 1 min e 30 sec
+const int OUTDOOR_TIME = 150;  // 2 min e 30 sec
 
-const int yellowTime = 30*4;     // tempo giallo: 30 sec
+const int yellowTime = 30;     // tempo giallo: 30 sec
 int greenTime = OUTDOOR_TIME;                  // tempo verde: da assegnare 
-const int preTime = 10*4; //tempo prima dello start: 10 sec
+const int preTime = 10; //tempo prima dello start: 10 sec
 
 int secs = 0; //timer
+int SEC_ID = -1;
 
 int greenID=-1, yellowID=-1, redID=-1; // ID per il timer
 
@@ -56,7 +57,6 @@ void setup() {
   Serial.begin(9600);  
   Serial.println(F("Centralina avviata"));
 
-  t.every(250, tick);
 }
 
 void loop() {
@@ -121,6 +121,11 @@ void red() {
   if(cycle == IDLE_CYCLE) {
     //controllo pressione bottone start
     if(startButtonCtrl()) {
+
+      SEC_ID = t.every(1000, tick);
+      Serial.print("timer ");
+      Serial.print(SEC_ID, DEC);
+      Serial.print("  ");
       
       if(digitalRead(REC_B)) {
         Serial.println("START");
@@ -156,12 +161,17 @@ void red() {
       else
         beep(4);
       recupero = false;
+      Serial.print("timer ");
+      Serial.print(SEC_ID, DEC);
+      Serial.println(" stop");
+      t.stop(SEC_ID);
+      SEC_ID = -1;
   }
 }
 
 void pre() {
   
-  if(secs > preTime) {
+  if(secs >= preTime) {
     state = GREEN_STATE;
     secs = 0;
     beep(1);
@@ -170,7 +180,7 @@ void pre() {
 
 void green() {
   
-  if(secs > greenTime) {
+  if(secs >= greenTime) {
     state = YELLOW_STATE;
     secs = 0;
     
@@ -182,7 +192,7 @@ void green() {
 
 void yellow() {
   
-  if(secs > yellowTime || stepCtrl()) {
+  if(secs >= yellowTime || stepCtrl()) {
     state = RED_STATE;
     secs = 0;
   }
