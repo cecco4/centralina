@@ -1,3 +1,6 @@
+#define __ASSERT_USE_STDERR
+
+#include <assert.h>
 #include "Timer.h"
 
 Timer t;
@@ -63,6 +66,18 @@ void loop() {
   //aggiorno timer
   t.update();
 
+  if(RED_STATE != 0 || PRE_STATE != 1 || GREEN_STATE != 2 
+     || YELLOW_STATE != 3)
+     assert(false);
+
+  if(state != GREEN_STATE && state != YELLOW_STATE &&
+     state != RED_STATE && state != PRE_STATE) {
+    assert(state);
+   }
+
+  if(GREEN_R !=10 || YELLOW_R != 11 || RED_R !=12)
+    assert(false);
+
   digitalWrite(GREEN_R, state != GREEN_STATE); 
   digitalWrite(YELLOW_R, state != YELLOW_STATE); 
   digitalWrite(RED_R, state != RED_STATE && state != PRE_STATE);
@@ -71,7 +86,10 @@ void loop() {
   //NB: il digital read dei bottoni restituisce: 
   //    0 se sono pigiati
   //    1 altrimenti
-  
+
+  if(INDOOR_TIME != 90 || OUTDOOR_TIME != 210)
+    assert(false);
+
   //Controllo outdoor (2:30) indor (1:30) 
   //assegno il tempo del verde di conseguenza
   if(!digitalRead(OUTIN_B)) {
@@ -82,6 +100,9 @@ void loop() {
     greenTime = OUTDOOR_TIME;
 
   }    
+
+  if(cycle != IDLE_CYCLE && cycle != AB_CYCLE && cycle != CD_CYCLE)
+    assert(false);
   
   switch(state) {
    case RED_STATE:
@@ -99,7 +120,7 @@ void loop() {
 
    case YELLOW_STATE:
      yellow();
-     break;   
+     break; 
   }
 
 }
@@ -123,6 +144,9 @@ void red() {
     if(startButtonCtrl()) {
 
       SEC_ID = t.every(1000, tick);
+      if(SEC_ID <0)
+        assert(false);
+      
       Serial.print("timer ");
       Serial.print(SEC_ID, DEC);
       Serial.print("  ");
@@ -161,6 +185,9 @@ void red() {
       else
         beep(4);
       recupero = false;
+
+      if(SEC_ID <0)
+        assert(false);
       Serial.print("timer ");
       Serial.print(SEC_ID, DEC);
       Serial.println(" stop");
@@ -170,6 +197,11 @@ void red() {
 }
 
 void pre() {
+  if(preTime != 10)
+    assert(false);
+    
+  if(secs <0 || secs >preTime)
+    assert(false);
   
   if(secs >= preTime) {
     state = GREEN_STATE;
@@ -179,6 +211,11 @@ void pre() {
 }
 
 void green() {
+  if(greenTime != INDOOR_TIME && greenTime != OUTDOOR_TIME)
+    assert(false);
+    
+  if(secs <0 || secs >greenTime)
+    assert(false);
   
   if(secs >= greenTime) {
     state = YELLOW_STATE;
@@ -192,6 +229,12 @@ void green() {
 
 void yellow() {
   
+  if(yellowTime != 30)
+    assert(false);
+    
+  if(secs <0 || secs >yellowTime)
+    assert(false);
+    
   if(secs >= yellowTime || stepCtrl()) {
     state = RED_STATE;
     secs = 0;
@@ -202,6 +245,9 @@ void yellow() {
 
 //esegue un beep "count" volte
 void beep(int count) {
+  if(count <= 0)
+    assert(false);
+    
   Serial.print(count, DEC);
   Serial.println(" beep");
 
@@ -210,17 +256,36 @@ void beep(int count) {
 
   if(count > 0)
     startBeep();
-  
-  if(count >1)
-    t.every(BEEP_INTERVAL, startBeep, count-1);
+
+  if(BEEP_INTERVAL != 1000)
+    assert(false);
+
+  if(count >1) {
+    int T_ID= t.every(BEEP_INTERVAL, startBeep, count-1);
+
+   if(T_ID == -1)
+      assert(false);
+  }
 }
 
 void startBeep() {
+  if(BEEP_R != 8)
+    assert(false);
+
+  if(BEEP_TIME != 500)
+    assert(false);
+  
   digitalWrite(BEEP_R, LOW);
-  t.after(BEEP_TIME, stopBeep);
+  int T_ID = t.after(BEEP_TIME, stopBeep);
+
+  if(T_ID == -1)
+    assert(true);
 }
 
 void stopBeep() {
+  if(BEEP_R != 8)
+    assert(false);
+  
   digitalWrite(BEEP_R, HIGH);
 }
 
@@ -229,6 +294,11 @@ boolean stepCtrl() {
   //il debounce evita paciughi nella lettura della pressione del bottone
   static int deb =0;
   static boolean startPush = false; 
+
+  if(deb  <0)
+    assert(false);
+  if(STEP_B != 3)
+    assert(false);
   
   if(digitalRead(STEP_B)) {
     deb = 0;
@@ -239,7 +309,7 @@ boolean stepCtrl() {
     deb++;
   }
   
-  if(RED_STATE==0 && !startPush && deb>100) {       // && digitalRead(RED_R) == HIGH) {
+  if(!startPush && deb>100) {       // && digitalRead(RED_R) == HIGH) {
    Serial.println(F("step"));   
    //e' stato premuto il bottone di step a ciclo avviato
    //interrompo i timers, e passo al rosso
@@ -255,6 +325,11 @@ boolean startButtonCtrl() {
   //il debounce evita paciughi nella lettura della pressione del bottone
   static int deb =0;
   static boolean startPush = false; 
+
+  if(deb  <0)
+    assert(false);
+  if(START_B != 2)
+    assert(false);
   
   if(digitalRead(START_B)) {
     deb = 0;
@@ -278,10 +353,25 @@ boolean startButtonCtrl() {
 
 
 void tick() {
+  if(secs < 0 || secs > 210)
+    assert(false);
+  
   if(cycle != IDLE_CYCLE) {
     Serial.print(++secs, DEC);
     Serial.print(".");
   }
  
+}
+
+// handle diagnostic informations given by assertion and abort program execution:
+void __assert(const char *__func, const char *__file, int __lineno, const char *__sexp) {
+    // transmit diagnostic informations through serial link. 
+    Serial.println(__func);
+    Serial.println(__file);
+    Serial.println(__lineno, DEC);
+    Serial.println(__sexp);
+    Serial.flush();
+    // abort program execution.
+    abort();
 }
 
