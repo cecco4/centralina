@@ -14,7 +14,7 @@ const int START_B = 2;    //pulsante start
 const int REC_B = 4;      //switch recupero
 
 const int INDOOR_TIME = 90;    // 1 min e 30 sec
-const int OUTDOOR_TIME = 150;  // 2 min e 30 sec
+const int OUTDOOR_TIME = 210;  // 3 min e 30 sec
 
 const int yellowTime = 30;     // tempo giallo: 30 sec
 int greenTime = OUTDOOR_TIME;                  // tempo verde: da assegnare 
